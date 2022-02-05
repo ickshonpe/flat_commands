@@ -30,15 +30,15 @@ mod tests {
         flat_commands
         .root(B::default())
         .with_id(|id| ids.push(id))
-        .with_child(B::default())
+        .spawn_child(B::default())
         .with_id(|id| ids.push(id))
-        .with_child(B::default())
+        .spawn_child(B::default())
         .with_id(|id| ids.push(id))
         .with_descendants(|sub_root| {
             sub_root
-            .with_child(B::default())
+            .spawn_child(B::default())
             .with_id(|id| ids.push(id))
-            .with_child(B::default())
+            .spawn_child(B::default())
             .with_id(|id| ids.push(id));
         });
 

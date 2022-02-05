@@ -54,7 +54,7 @@ pub trait ParentCommander<'w, 's, 'a> {
         self
     }
 
-    fn with_child<T>(&mut self, bundle: T) -> ChildCommands<'w, 's, '_> 
+    fn spawn_child<T>(&mut self, bundle: T) -> ChildCommands<'w, 's, '_> 
     where
         T: Bundle
     {
@@ -136,6 +136,10 @@ impl<'w, 's, 'a> ChildCommands<'w, 's, 'a> {
             commands: &mut self.commands
         }
     }
+
+    pub fn parent_id(&self) -> Entity {
+        self.parent
+    }
 }
 
 #[cfg(test)]
@@ -166,7 +170,7 @@ mod tests {
         let mut commands = flat_commands.take_commands();
         commands.insert_resource(Root(root_id));
         let mut flat_commands = commands.flat_commands();
-        let child_id = flat_commands.entity(root_id).with_child(By::default()).id();        
+        let child_id = flat_commands.entity(root_id).spawn_child(By::default()).id();        
         flat_commands.commands().insert_resource(Child(child_id));
     }
 
@@ -190,9 +194,9 @@ mod tests {
         flat_commands.commands().insert_resource(Root(root_id));
         for _ in 0..10 {
             flat_commands.entity(root_id)
-            .with_child(By::default()) 
-            .with_child(By::default())  
-            .with_child(By::default())  
+            .spawn_child(By::default()) 
+            .spawn_child(By::default())  
+            .spawn_child(By::default())  
             .with_sibling(By::default()) 
             .with_sibling(By::default()); 
         }
@@ -213,8 +217,8 @@ mod tests {
 
     fn spawn_hierachy_3(mut flat_commands: FlatCommands) {
         let root = flat_commands.root(Bx::default()).id();
-        let a = flat_commands.entity(root).with_child(Bx::default()).id();
-        let b = flat_commands.entity(root).with_child(Bx::default()).id();
+        let a = flat_commands.entity(root).spawn_child(Bx::default()).id();
+        let b = flat_commands.entity(root).spawn_child(Bx::default()).id();
         flat_commands.commands().entity(a)
         .with_children(|builder| {
             builder.spawn_bundle(By::default()).id();
@@ -239,16 +243,16 @@ mod tests {
     fn spawn_hierachy_4(mut flat_commands: FlatCommands) {
         flat_commands
         .root(Bx::default())
-        .with_child(Bx::default())
+        .spawn_child(Bx::default())
         .with_descendants(|local_root| {
             local_root
-            .with_child(By::default())
+            .spawn_child(By::default())
             .with_sibling(By::default());
         })
         .with_sibling(Bx::default())
         .with_descendants(|local_root| {
             local_root
-            .with_child(By::default())
+            .spawn_child(By::default())
             .with_sibling(By::default());
         });
     }
@@ -263,13 +267,13 @@ mod tests {
         let mut root = flat_commands.root(Bx::default());
         
         root
-        .with_child(Bx::default())
-        .with_child(Bx::default())
+        .spawn_child(Bx::default())
+        .spawn_child(Bx::default())
         .with_sibling(Bx::default());
 
         root
-        .with_child(By::default())
-        .with_child(By::default())
+        .spawn_child(By::default())
+        .spawn_child(By::default())
         .with_sibling(By::default());
     }
 
@@ -288,7 +292,7 @@ mod tests {
         let mut root = flat_commands.root(Bx::default());
         let root_id = root.id();
         root
-        .with_child(By::default())
+        .spawn_child(By::default())
         .with_sibling(By::default())
         .commands().insert_resource(Root(root_id));
     }
