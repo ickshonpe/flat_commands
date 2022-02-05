@@ -285,4 +285,4 @@ fn access_commands(mut commands: Commands) {
 * Untested, probably has bugs.
 * Unprofiled, probably slow.
 * Has add_child and push_children.
-* No removal or insertion functionality (but accessible by flat_commands.commands()).
+* No despawning or component removal (but accessible by flat_commands.commands()).
