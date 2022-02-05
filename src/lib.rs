@@ -97,6 +97,20 @@ pub trait ParentCommander<'w, 's, 'a> {
         self.commands().add(AddChild { child, parent: entity });
         self
     }
+
+    fn spawn_children<I>(&mut self, bundles_iter: I) -> &mut Self 
+    where
+        I: IntoIterator + Send + Sync + 'static,
+        I::Item: Bundle,
+        <I as IntoIterator>::IntoIter: Send + Sync
+    {
+        let entity = self.id();
+        let bundles_iter = bundles_iter.into_iter().map(move |bundle| (entity, bundle));
+        self.commands().add(InsertOrSpawnBatch {
+            bundles_iter,
+        });
+        self
+    }
 }
 
 impl<'w, 's> FlatCommands<'w, 's> {
