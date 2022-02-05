@@ -158,49 +158,49 @@ pub fn spawn_text_box(
 fn spawn_branching_hierachy(
     commands: &mut Commands
 ) -> Entity {
-    let id = commands.spawn_bundle(X::default()).id();
+    let id = commands.spawn().id();
 
     commands.entity(id)
     .with_children(|builder| {
         builder
-        .spawn_bundle(X::default())
+        .spawn()
         .with_children(|builder| {
             builder
-            .spawn_bundle(X::default())
+            .spawn()
             .with_children(|builder| {
                 builder
-                .spawn_bundle(X::default());
+                .spawn();
 
                 builder
-                .spawn_bundle(X::default());
+                .spawn();
             });
         });
 
         builder
-        .spawn_bundle(X::default())
+        .spawn()
         .with_children(|builder| {
             builder
-            .spawn_bundle(X::default())
+            .spawn()
             .with_children(|builder| {
                 builder
-                .spawn_bundle(X::default());
+                .spawn();
 
                 builder
-                .spawn_bundle(X::default());
+                .spawn();
             });
         });
 
         builder
-        .spawn_bundle(X::default())
+        .spawn()
         .with_children(|builder| {
             builder
-            .spawn_bundle(X::default())
+            .spawn()
             .with_children(|builder| {
                 builder
-                .spawn_bundle(X::default());
+                .spawn();
 
                 builder
-                .spawn_bundle(X::default());
+                .spawn();
             });
         });
     });
@@ -214,24 +214,24 @@ fn spawn_branching_hierachy(
     flat_commands: &mut FlatCommands
 ) -> Entity {
     flat_commands
-    .spawn_root(X::default())
+    .spawn_empty_root()
     .with_descendants(|local_root| {
         local_root
-        .spawn_child(X::default())
-        .spawn_child(X::default())
-        .with_sibling(X::default())
+        .spawn_empty_child()
+        .spawn_empty_child()
+        .spawn_empty_sibling()
     })
     .with_descendants(|local_root| {
         local_root
-        .spawn_child(X::default())
-        .spawn_child(X::default())
-        .with_sibling(X::default())
+        .spawn_empty_child()
+        .spawn_empty_child()
+        .spawn_empty_sibling()
     })
     .with_descendants(|local_root| {
         local_root
-        .spawn_child(X::default())
-        .spawn_child(X::default())
-        .with_sibling(X::default())
+        .spawn_empty_child()
+        .spawn_empty_child()
+        .spawn_empty_sibling()
     })
     .root_id()
 }
@@ -242,22 +242,22 @@ fn spawn_hierachy(
     mut flat_commands: FlatCommands
 ) -> Entity {
     let root = flat_commands
-    .spawn_root(X::default());
+    .spawn_empty_root();
 
     root
-    .spawn_child(X::default())
-    .spawn_child(X::default())
-    .with_sibling(X::default());
+    .spawn_empty_child()
+    .spawn_empty_child()
+    .spawn_empty_sibling();
     
     root
-    .spawn_child(X::default())
-    .spawn_child(X::default())
-    .with_sibling(X::default());
+    .spawn_empty_child()
+    .spawn_empty_child()
+    .spawn_empty_sibling();
     
     root
-    .spawn_child(X::default())
-    .spawn_child(X::default())
-    .with_sibling(X::default())
+    .spawn_empty_child()
+    .spawn_empty_child()
+    .spawn_empty_sibling()
     .root_id()
 }
 ```

@@ -118,6 +118,14 @@ impl<'w, 's> FlatCommands<'w, 's> {
         }
     }
 
+    pub fn spawn_empty_root<T>(&mut self) -> RootCommands<'w, 's, '_> {
+        let entity = self.commands.spawn().id();
+        RootCommands {
+            entity,
+            commands: &mut self.commands
+        }
+    }
+
     pub fn insert_resource<T: Resource>(&mut self, resource: T) {
         self.commands.insert_resource(resource);
     }
