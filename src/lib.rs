@@ -477,12 +477,18 @@ mod tests {
     fn spawn_hierachy_9(mut flat_commands: FlatCommands) {
         flat_commands.spawn_root(Bx::default())
         .spawn_child(By::default())
+        .spawn_child_batch((0..10).map(|_| By::default()))
         .insert(X::default())   
         .spawn_child_batch((0..10).map(|_| By::default()))
         .with_sibling(By::default())
         .spawn_child_batch((0..10).map(|_| By::default()))
         .with_sibling(By::default())
         .insert(Y::default())  
+        .spawn_child(Bx::default())
+        .spawn_child_batch((0..10).map(|_| By::default()))
+        .with_descendants(|local_root| {
+            local_root.spawn_child_batch((0..10).map(|_| By::default()));
+        })
         .spawn_child_batch((0..10).map(|_| By::default()));
     }
 
@@ -491,6 +497,6 @@ mod tests {
     fn test_hierachy_9() {
         let mut world = World::default();
         SystemStage::single_threaded().add_system(spawn_hierachy_9).run(&mut world);
-        assert_eq!(world.entities().len(), 34);
+        assert_eq!(world.entities().len(), 65);
     }
 }
