@@ -210,6 +210,8 @@ fn spawn_branching_hierachy(
 ```
 ### after
 ```rust
+use flat_commands::*;
+
 fn spawn_branching_hierachy(
     flat_commands: &mut FlatCommands
 ) -> Entity {
@@ -238,6 +240,8 @@ fn spawn_branching_hierachy(
 ```
 ### or
 ```rust
+use flat_commands::*;
+
 fn spawn_hierachy(
     mut flat_commands: FlatCommands
 ) -> Entity {
@@ -262,22 +266,64 @@ fn spawn_hierachy(
 }
 ```
 #
+###
+spawn children in a batch
+```rust
+use flat_commands::*;
+
+fn spawn_brood(
+    mut flat_commands: FlatCommands,
+    asset_server: Res<AssetServer>,
+) {
+    flat_commands
+    .spawn_root(NodeBundle { ..Default::default() })
+    .spawn_child_batch((0..30).map(|i| {
+        TextBundle {
+            style: Style {
+                flex_shrink: 0.,
+                size: Size::new(Val::Undefined, Val::Px(20.)),
+                margin: Rect {
+                    left: Val::Auto,
+                    right: Val::Auto,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            text: Text::with_section(
+                format!("Item {}", i),
+                TextStyle {
+                    font: asset_server
+                        .load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 20.,
+                    color: Color::RED,
+                },
+                Default::default(),
+            ),
+            ..Default::default()
+        }
+    );
+}
+```
+#
 ### Commands access
 ```rust
+use flat_commands::*;
+
 fn access_commands(mut commands: Commands) {
     let player_entity = commands.flat_commands()
-        .spawn_root(PlayerCharacter::default()
-        .spawn_child(Sword::default())
-        .with_sibling(Lantern::default())
+        .spawn_root(PlayerCharacterBundle::default()
+        .spawn_child(SwordBundle::default())
+        .with_sibling(LanternBundle::default())
         .parent_id();
 
     commands.insert_resource(PlayerEntity(player_entity));
 
     let flat_commands: FlatCommands = commands.flat_commands();
     flat_commands.remove_resource::<PlayerEntity>();
+    flat_commands.commands().despawn_recursive(player_entity);
 
     let commands: Commands = flat_commands.take_commands();
-    commands.entity(player_entity).insert(Hitpoints(25));
+    commands.spawn_bundle(PlayerCorpseBundle::default());
 }
 ```
 #
@@ -285,5 +331,6 @@ fn access_commands(mut commands: Commands) {
 * Undocumented.
 * Untested, probably has bugs.
 * Unprofiled, probably slow.
-* Has add_child and push_children.
-* No despawning or component removal (but accessible with FlatCommands::commands()).
+* Also has add_child and push_children.
+* No despawning or component removal (but accessible with .commands()).
+* No unsafe or macros.

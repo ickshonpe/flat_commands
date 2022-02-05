@@ -81,6 +81,20 @@ pub trait ParentCommander<'w, 's, 'a> {
         }
     }
 
+    fn spawn_child_batch<I>(&mut self, bundles_iter: I) -> &mut Self 
+    where
+        I: IntoIterator + Send + Sync + 'static,
+        I::Item: Bundle,
+        <I as IntoIterator>::IntoIter: Send + Sync
+    {
+        let parent = self.id();
+        self.commands().add( SpawnChildBatch {
+            parent,
+            bundles_iter,
+        });
+        self
+    }
+
     fn with_descendants(&mut self, local_root: impl FnOnce(&mut RootCommands)) -> &mut Self {
         local_root(&mut RootCommands { entity: self.id(), commands: self.commands() });
         self
@@ -98,19 +112,7 @@ pub trait ParentCommander<'w, 's, 'a> {
         self
     }
 
-    fn spawn_children<I>(&mut self, bundles_iter: I) -> &mut Self 
-    where
-        I: IntoIterator + Send + Sync + 'static,
-        I::Item: Bundle,
-        <I as IntoIterator>::IntoIter: Send + Sync
-    {
-        let entity = self.id();
-        let bundles_iter = bundles_iter.into_iter().map(move |bundle| (entity, bundle));
-        self.commands().add(InsertOrSpawnBatch {
-            bundles_iter,
-        });
-        self
-    }
+    
 }
 
 impl<'w, 's> FlatCommands<'w, 's> {
@@ -217,6 +219,32 @@ impl<'w, 's, 'a> ChildCommands<'w, 's, 'a> {
         self.parent
     }
 }
+
+pub struct SpawnChildBatch<I> 
+where
+    I: IntoIterator,
+    I::Item: Bundle,
+{
+    pub parent: Entity,
+    pub bundles_iter: I
+}
+
+// I: IntoIterator + Send + Sync + 'static,
+// I::Item: Bundle,
+// <I as IntoIterator>::IntoIter: Send + Sync
+
+impl <I> Command for SpawnChildBatch<I> 
+where
+    I: IntoIterator + Send + Sync + 'static,
+    I::Item: Bundle,
+{
+    fn write(self, world: &mut World) {
+        let es = world.spawn_batch(self.bundles_iter).collect::<Vec<Entity>>();     
+            // not sure how to get around this allocation.
+        world.entity_mut(self.parent).push_children(&es);
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -386,5 +414,23 @@ mod tests {
             assert_eq!(root_id, parent);
 
         }
+    }
+
+    fn spawn_hierachy_7(mut flat_commands: FlatCommands) {
+        let root_id = flat_commands.spawn_root(Bx::default())
+            .spawn_child_batch((0..10).map(|_| By::default()))
+            .root_id();
+        flat_commands.commands().insert_resource(Root(root_id));
+    }
+
+    #[test]
+    fn test_hierachy_7() {
+        let mut world = World::default();
+        SystemStage::single_threaded().add_system(spawn_hierachy_7).run(&mut world);
+        assert_eq!(world.entities().len(), 11);
+        let root_id = world.get_resource::<Root>().unwrap().0;
+        assert!(world.entity(root_id).get::<X>().is_some());
+        assert_eq!(world.entity(root_id).get::<Children>().unwrap().len(), 10);
+        assert_eq!(world.query::<&Y>().iter(&world).len(), 10);
     }
 }
