@@ -28,7 +28,7 @@ mod tests {
     fn spawn_hierachy_1(mut flat_commands: FlatCommands) {
         let mut ids = vec![];
         flat_commands
-        .root(B::default())
+        .spawn_root(B::default())
         .with_id(|id| ids.push(id))
         .spawn_child(B::default())
         .with_id(|id| ids.push(id))

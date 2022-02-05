@@ -55,7 +55,7 @@ use flat_commands::*;
 
 fn setup(mut flat_commands: FlatCommands) {
     flat_commands
-        .root(PbrBundle {
+        .spawn_root(PbrBundle {
             transform: Transform::from_xyz(1.0, 1.0, 1.0),
             ..Default::default()
         })
@@ -121,7 +121,7 @@ pub fn spawn_text_box(
     mut commands: FlatCommands,
     asset_server: Res<AssetServer>,
 ) {
-    flat_commands.root(NodeBundle {
+    flat_commands.spawn_root(NodeBundle {
         style: Style {
             position_type: PositionType::Absolute,
             position: Rect { left: Val::Px(100.0), bottom: Val::Px(100.0), ..Default::default() },
@@ -155,11 +155,12 @@ pub fn spawn_text_box(
 #
 ### Before
 ```rust
-fn branching_hierachy(
-    mut commands: Commands
-) {
-    commands
-    .spawn_bundle(X::default())
+fn spawn_branching_hierachy(
+    commands: &mut Commands
+) -> Entity {
+    let id = commands.spawn_bundle(X::default()).id();
+
+    commands.entity(id)
     .with_children(|builder| {
         builder
         .spawn_bundle(X::default())
@@ -203,15 +204,17 @@ fn branching_hierachy(
             });
         });
     });
+
+    id
 }
 ```
 ### after
 ```rust
-fn spawn_hierachy(
-    mut flat_commands: FlatCommands
-) {
+fn spawn_branching_hierachy(
+    flat_commands: &mut FlatCommands
+) -> Entity {
     flat_commands
-    .root(X::default())
+    .spawn_root(X::default())
     .with_descendants(|local_root| {
         local_root
         .spawn_child(X::default())
@@ -229,16 +232,17 @@ fn spawn_hierachy(
         .spawn_child(X::default())
         .spawn_child(X::default())
         .with_sibling(X::default())
-    });
+    })
+    .root_id()
 }
 ```
 ### or
 ```rust
 fn spawn_hierachy(
     mut flat_commands: FlatCommands
-) {
+) -> Entity {
     let root = flat_commands
-    .root(X::default());
+    .spawn_root(X::default());
 
     root
     .spawn_child(X::default())
@@ -253,7 +257,8 @@ fn spawn_hierachy(
     root
     .spawn_child(X::default())
     .spawn_child(X::default())
-    .with_sibling(X::default());
+    .with_sibling(X::default())
+    .root_id()
 }
 ```
 #
@@ -261,7 +266,7 @@ fn spawn_hierachy(
 ```rust
 fn access_commands(mut commands: Commands) {
     let player_entity = commands.flat_commands()
-        .root(PlayerCharacter::default()
+        .spawn_root(PlayerCharacter::default()
         .spawn_child(Sword::default())
         .with_sibling(Lantern::default())
         .parent_id();
@@ -269,7 +274,7 @@ fn access_commands(mut commands: Commands) {
     commands.insert_resource(PlayerEntity(player_entity));
 
     let flat_commands: FlatCommands = commands.flat_commands();
-    flat_commands.commands().remove_resource::<PlayerEntity>();
+    flat_commands.remove_resource::<PlayerEntity>();
 
     let commands: Commands = flat_commands.take_commands();
     commands.entity(player_entity).insert(Hitpoints(25));
@@ -279,3 +284,5 @@ fn access_commands(mut commands: Commands) {
 ## Other Info
 * Untested, probably has bugs.
 * Unprofiled, probably slow.
+* Has add_child and push_children.
+* No removal or insertion functionality (but accessible by flat_commands.commands()).
