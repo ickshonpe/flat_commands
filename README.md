@@ -282,6 +282,7 @@ fn access_commands(mut commands: Commands) {
 ```
 #
 ## Other Info
+* Undocumented.
 * Untested, probably has bugs.
 * Unprofiled, probably slow.
 * Has add_child and push_children.
