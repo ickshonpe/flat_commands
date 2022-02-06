@@ -3,7 +3,7 @@
 Extension trait on Bevy Commands for spawning entity hierarchies without nesting.
 
 ## Examples
-#
+
 ### Before
 ```rust
 fn setup(mut commands: Commands) {
