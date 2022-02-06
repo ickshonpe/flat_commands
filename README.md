@@ -1,6 +1,6 @@
 # Flat Commands
 
-Facade over Bevy Commands for spawning entity hierarchies without nesting.
+Extension trait on Bevy Commands for spawning entity hierarchies without nesting.
 
 ## Examples
 #
@@ -53,13 +53,13 @@ fn setup(mut commands: Commands) {
 ```rust
 use flat_commands::*;
 
-fn setup(mut flat_commands: FlatCommands) {
+fn setup(mut commands: Commands) {
     flat_commands
         .spawn_root(PbrBundle {
             transform: Transform::from_xyz(1.0, 1.0, 1.0),
             ..Default::default()
         })
-        .spawn_child(PbrBundle {
+        .with_child(PbrBundle {
             transform: Transform::from_xyz(1.0, 1.0, 1.0),
             ..Default::default()
         })
@@ -118,10 +118,10 @@ pub fn spawn_text_box(
 use flat_commands::*;
 
 pub fn spawn_text_box(
-    mut commands: FlatCommands,
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    flat_commands.spawn_root(NodeBundle {
+    commands.spawn_root(NodeBundle {
         style: Style {
             position_type: PositionType::Absolute,
             position: Rect { left: Val::Px(100.0), bottom: Val::Px(100.0), ..Default::default() },
@@ -130,7 +130,7 @@ pub fn spawn_text_box(
         },
         ..Default::default()
     })
-    .spawn_child(NodeBundle {
+    .with_child(NodeBundle {
         color: UiColor (Color::DARK_GRAY),
         style: Style {
             padding: Rect::all(Val::Px(4.0)),
@@ -138,7 +138,7 @@ pub fn spawn_text_box(
         },
         ..Default::default()
     })
-    .spawn_child(TextBundle {
+    .with_child(TextBundle {
         text: Text::with_section(
             "Hello, world!",
             TextStyle {
@@ -213,27 +213,27 @@ fn spawn_branching_hierachy(
 use flat_commands::*;
 
 fn spawn_branching_hierachy(
-    flat_commands: &mut FlatCommands
+    commands: &mut Commands
 ) -> Entity {
-    flat_commands
+    commands
     .spawn_empty_root()
     .with_descendants(|local_root| {
         local_root
-        .spawn_empty_child()
-        .spawn_empty_child()
-        .spawn_empty_sibling()
+        .with_empty_child()
+        .with_empty_child()
+        .with_empty_sibling()
     })
     .with_descendants(|local_root| {
         local_root
-        .spawn_empty_child()
-        .spawn_empty_child()
-        .spawn_empty_sibling()
+        .with_empty_child()
+        .with_empty_child()
+        .with_empty_sibling()
     })
     .with_descendants(|local_root| {
         local_root
-        .spawn_empty_child()
-        .spawn_empty_child()
-        .spawn_empty_sibling()
+        .with_empty_child()
+        .with_empty_child()
+        .with_empty_sibling()
     })
     .root_id()
 }
@@ -243,25 +243,25 @@ fn spawn_branching_hierachy(
 use flat_commands::*;
 
 fn spawn_hierachy(
-    mut flat_commands: FlatCommands
+    mut commands: Commands
 ) -> Entity {
-    let root = flat_commands
+    let root = commands
     .spawn_empty_root();
 
     root
-    .spawn_empty_child()
-    .spawn_empty_child()
-    .spawn_empty_sibling();
+    .with_empty_child()
+    .with_empty_child()
+    .with_empty_sibling();
     
     root
-    .spawn_empty_child()
-    .spawn_empty_child()
-    .spawn_empty_sibling();
+    .with_empty_child()
+    .with_empty_child()
+    .with_empty_sibling();
     
     root
-    .spawn_empty_child()
-    .spawn_empty_child()
-    .spawn_empty_sibling()
+    .with_empty_child()
+    .with_empty_child()
+    .with_empty_sibling()
     .root_id()
 }
 ```
@@ -272,12 +272,12 @@ spawn children in a batch
 use flat_commands::*;
 
 fn spawn_brood(
-    mut flat_commands: FlatCommands,
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    flat_commands
-    .spawn_root(NodeBundle { ..Default::default() })
-    .spawn_child_batch((0..30).map(|i| {
+    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+    commands.spawn_root(NodeBundle { ..Default::default() })
+    .with_child_batch((0..30).map(|i| {
         TextBundle {
             style: Style {
                 flex_shrink: 0.,
@@ -292,8 +292,7 @@ fn spawn_brood(
             text: Text::with_section(
                 format!("Item {}", i),
                 TextStyle {
-                    font: asset_server
-                        .load("fonts/FiraSans-Bold.ttf"),
+                    font: font.clone(),
                     font_size: 20.,
                     color: Color::RED,
                 },
@@ -305,32 +304,10 @@ fn spawn_brood(
 }
 ```
 #
-### Commands access
-```rust
-use flat_commands::*;
-
-fn access_commands(mut commands: Commands) {
-    let player_entity = commands.flat_commands()
-        .spawn_root(PlayerCharacterBundle::default()
-        .spawn_child(SwordBundle::default())
-        .with_sibling(LanternBundle::default())
-        .parent_id();
-
-    commands.insert_resource(PlayerEntity(player_entity));
-
-    let flat_commands: FlatCommands = commands.flat_commands();
-    flat_commands.remove_resource::<PlayerEntity>();
-    flat_commands.commands().despawn_recursive(player_entity);
-
-    let commands: Commands = flat_commands.take_commands();
-    commands.spawn_bundle(PlayerCorpseBundle::default());
-}
-```
-#
 ## Other Info
 * Undocumented.
 * Untested, probably has bugs.
 * Unprofiled, probably slow.
 * Also has add_child and push_children.
-* No despawning or component removal (but accessible with .commands()).
+* No despawning or component removal (use regular commands).
 * No unsafe or macros.
