@@ -54,7 +54,7 @@ fn setup(mut commands: Commands) {
 use flat_commands::*;
 
 fn setup(mut commands: Commands) {
-    flat_commands
+    commands
         .spawn_root(PbrBundle {
             transform: Transform::from_xyz(1.0, 1.0, 1.0),
             ..Default::default()
