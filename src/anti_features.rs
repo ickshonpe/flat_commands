@@ -25,24 +25,24 @@ mod tests {
 
     struct Ids(Vec<Entity>);
 
-    fn spawn_hierachy_1(mut flat_commands: FlatCommands) {
+    fn spawn_hierachy_1(mut commands: Commands) {
         let mut ids = vec![];
-        flat_commands
+        commands
         .spawn_root(B::default())
         .with_id(|id| ids.push(id))
-        .spawn_child(B::default())
+        .with_child(B::default())
         .with_id(|id| ids.push(id))
-        .spawn_child(B::default())
+        .with_child(B::default())
         .with_id(|id| ids.push(id))
         .with_descendants(|sub_root| {
             sub_root
-            .spawn_child(B::default())
+            .with_child(B::default())
             .with_id(|id| ids.push(id))
-            .spawn_child(B::default())
+            .with_child(B::default())
             .with_id(|id| ids.push(id));
         });
 
-        flat_commands.commands().insert_resource(Ids(ids));
+        commands.insert_resource(Ids(ids));
     }
 
     #[test]

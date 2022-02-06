@@ -3,9 +3,41 @@ pub mod anti_features;
 use bevy::ecs::system::*;
 use bevy::prelude::*;
 
-#[derive(SystemParam)]
-pub struct FlatCommands<'w, 's> {
-    commands: Commands<'w, 's>
+pub trait FlatCommands<'w, 's> {
+    fn root<'a>(&'a mut self, entity: Entity) -> RootCommands<'w, 's, 'a>;
+
+    fn spawn_root<B>(&mut self, bundle: B) -> RootCommands<'w, 's, '_> 
+    where B: Bundle;
+
+    fn spawn_empty_root(&mut self) -> RootCommands<'w, 's, '_>;
+}
+
+impl <'w, 's> FlatCommands<'w, 's> for Commands<'w, 's> {
+    fn root<'a>(&'a mut self, entity: Entity) -> RootCommands<'w, 's, 'a> {
+        RootCommands {
+            entity,
+            commands: self
+        }
+    }
+
+    fn spawn_root<'a, B>(&'a mut self, b: B) -> RootCommands<'w, 's, 'a> 
+    where 
+        B: Bundle
+    {
+        let entity = self.spawn_bundle(b).id();
+        RootCommands {
+            entity,
+            commands: self
+        }
+    }
+
+    fn spawn_empty_root<'a>(&'a mut self) -> RootCommands<'w, 's, 'a> {
+        let entity = self.spawn().id();
+        RootCommands {
+            entity,
+            commands: self
+        }
+    }
 }
 
 pub struct RootCommands<'w, 's, 'a> {
@@ -20,20 +52,9 @@ pub struct ChildCommands<'w, 's, 'a> {
     commands: &'a mut Commands<'w, 's>,
 }
 
-pub trait GetFlatCommands<'w, 's> {
-    fn flat_commands(self) -> FlatCommands<'w, 's>;
-}
-
-impl <'w, 's> GetFlatCommands<'w, 's> for Commands<'w, 's> {
-    fn flat_commands(self) -> FlatCommands<'w, 's> {
-        FlatCommands {
-            commands: self
-        }
-    }
-}
-
 pub trait ParentCommander<'w, 's, 'a> {
     fn root_id(&self) -> Entity;
+
     fn id(&self) -> Entity;
 
     fn commands(&mut self) -> &mut Commands<'w, 's>;
@@ -56,7 +77,7 @@ pub trait ParentCommander<'w, 's, 'a> {
         self
     }
 
-    fn spawn_child<T>(&mut self, bundle: T) -> ChildCommands<'w, 's, '_> 
+    fn with_child<T>(&mut self, bundle: T) -> ChildCommands<'w, 's, '_> 
     where
         T: Bundle
     {
@@ -70,7 +91,7 @@ pub trait ParentCommander<'w, 's, 'a> {
         }
     }
 
-    fn spawn_empty_child<T>(&mut self) -> ChildCommands<'w, 's, '_> {
+    fn with_empty_child<T>(&mut self) -> ChildCommands<'w, 's, '_> {
         let child = self.commands().spawn().id();
         self.add_child(child);
         ChildCommands { 
@@ -98,58 +119,14 @@ pub trait ParentCommander<'w, 's, 'a> {
         self
     }
 
-    fn spawn_child_batch<I>(&mut self, bundles_iter: I) -> &mut Self
+    fn with_child_batch<I>(&mut self, bundles_iter: I) -> &mut Self
     where
         I: IntoIterator + Send + Sync + 'static,
         I::Item: Bundle,
     {
         let parent = self.id();
-        self.commands().spawn_child_batch(parent, bundles_iter);
+        self.commands().with_child_batch(parent, bundles_iter);
         self
-    }
-}
-
-impl<'w, 's> FlatCommands<'w, 's> {
-    pub fn entity(&mut self, entity: Entity) -> RootCommands<'w, 's, '_> {
-        RootCommands { 
-            entity, 
-            commands: &mut self.commands
-        }
-    }
-
-    pub fn spawn_root<T>(&mut self, bundle: T) -> RootCommands<'w, 's, '_> 
-    where 
-        T: Bundle,
-    {
-        let entity = self.commands.spawn_bundle(bundle).id();
-        RootCommands {
-            entity,
-            commands: &mut self.commands
-        }
-    }
-
-    pub fn spawn_empty_root<T>(&mut self) -> RootCommands<'w, 's, '_> {
-        let entity = self.commands.spawn().id();
-        RootCommands {
-            entity,
-            commands: &mut self.commands
-        }
-    }
-
-    pub fn insert_resource<T: Resource>(&mut self, resource: T) {
-        self.commands.insert_resource(resource);
-    }
-
-    pub fn remove_resource<T: Resource>(&mut self) {
-        self.commands.remove_resource::<T>();
-    }
-
-    pub fn take_commands(self) -> Commands<'w, 's> {
-        self.commands
-    }
-
-    pub fn commands(&mut self) -> &mut Commands<'w, 's> {
-        &mut self.commands
     }
 }
 
@@ -181,18 +158,6 @@ impl <'w, 's, 'a> ParentCommander<'w, 's, 'a> for ChildCommands<'w, 's, 'a> {
     }
 }
 
-// impl <'w, 's, 'a> RootCommands<'w, 's, 'a> {
-//     pub fn spawn_child_batch<I>(&mut self, bundles_iter: I) -> &mut Self 
-//     where
-//         I: IntoIterator + Send + Sync + 'static,
-//         I::Item: Bundle,
-//     {
-//         let parent = self.id();
-//         self.commands().spawn_child_batch(parent, bundles_iter);
-//         self
-//     }
-// }
-
 impl<'w, 's, 'a> ChildCommands<'w, 's, 'a> {    
     pub fn with_sibling<T>(&mut self, bundle: T) -> &mut Self 
     where 
@@ -205,23 +170,13 @@ impl<'w, 's, 'a> ChildCommands<'w, 's, 'a> {
         self
     }
 
-    pub fn spawn_empty_sibling<T>(&mut self) -> &mut Self {
+    pub fn with_empty_sibling<T>(&mut self) -> &mut Self {
         let parent = self.parent;
         let child = self.commands.spawn().id();
         self.commands.add(AddChild { child, parent });
         self.entity = child;
         self
     }
-
-    // pub fn spawn_child_batch<I>(&mut self, bundles_iter: I) -> &mut Self
-    // where
-    //     I: IntoIterator + Send + Sync + 'static,
-    //     I::Item: Bundle,
-    // {
-    //     let parent = self.id();
-    //     self.commands().spawn_child_batch(parent, bundles_iter);
-    //     self
-    // }
 
     pub fn parent_id(&self) -> Entity {
         self.parent
@@ -237,10 +192,6 @@ where
     pub bundles_iter: I
 }
 
-// I: IntoIterator + Send + Sync + 'static,
-// I::Item: Bundle,
-// <I as IntoIterator>::IntoIter: Send + Sync
-
 impl <I> Command for SpawnChildBatch<I> 
 where
     I: IntoIterator + Send + Sync + 'static,
@@ -254,14 +205,14 @@ where
 }
 
 pub trait SpawnChildBatchExt {
-    fn spawn_child_batch<I>(&mut self, parent: Entity, iter_bundles: I) -> &mut Self 
+    fn with_child_batch<I>(&mut self, parent: Entity, iter_bundles: I) -> &mut Self 
     where
         I: IntoIterator + Send + Sync + 'static,
         I::Item: Bundle;
 }
 
 impl <'w, 's> SpawnChildBatchExt for Commands<'w, 's> {
-    fn spawn_child_batch<I>(&mut self, parent: Entity, bundles_iter: I) -> &mut Self 
+    fn with_child_batch<I>(&mut self, parent: Entity, bundles_iter: I) -> &mut Self 
     where
         I: IntoIterator + Send + Sync + 'static,
         I::Item: Bundle {
@@ -296,13 +247,11 @@ mod tests {
     struct Root(Entity);
     struct Child(Entity);
 
-    fn spawn_hierachy_1(mut flat_commands: FlatCommands) {
-        let root_id = flat_commands.spawn_root(Bx::default()).id();
-        let mut commands = flat_commands.take_commands();
+    fn spawn_hierachy_1(mut commands: Commands) {
+        let root_id = commands.spawn_root(Bx::default()).id();
         commands.insert_resource(Root(root_id));
-        let mut flat_commands = commands.flat_commands();
-        let child_id = flat_commands.entity(root_id).spawn_child(By::default()).id();        
-        flat_commands.commands().insert_resource(Child(child_id));
+        let child_id = commands.root(root_id).with_child(By::default()).id();        
+        commands.insert_resource(Child(child_id));
     }
 
     #[test]
@@ -320,14 +269,14 @@ mod tests {
         assert_eq!(parent.0, root_id);
     }
 
-    fn spawn_hierachy_2(mut flat_commands: FlatCommands) {
-        let root_id = flat_commands.spawn_root(Bx::default()).id();
-        flat_commands.commands().insert_resource(Root(root_id));
+    fn spawn_hierachy_2(mut commands: Commands) {
+        let root_id = commands.spawn_root(Bx::default()).id();
+        commands.insert_resource(Root(root_id));
         for _ in 0..10 {
-            flat_commands.entity(root_id)
-            .spawn_child(By::default()) 
-            .spawn_child(By::default())  
-            .spawn_child(By::default())  
+            commands.root(root_id)
+            .with_child(By::default()) 
+            .with_child(By::default())  
+            .with_child(By::default())  
             .with_sibling(By::default()) 
             .with_sibling(By::default()); 
         }
@@ -346,11 +295,11 @@ mod tests {
         assert_eq!(world.query::<&Children>().iter(&world).len(), 21);
     }
 
-    fn spawn_hierachy_3(mut flat_commands: FlatCommands) {
-        let root = flat_commands.spawn_root(Bx::default()).id();
-        let a = flat_commands.entity(root).spawn_child(Bx::default()).id();
-        let b = flat_commands.entity(root).spawn_child(Bx::default()).id();
-        flat_commands.commands().entity(a)
+    fn spawn_hierachy_3(mut commands: Commands) {
+        let root = commands.spawn_root(Bx::default()).id();
+        let a = commands.root(root).with_child(Bx::default()).id();
+        let b = commands.root(root).with_child(Bx::default()).id();
+        commands.entity(a)
         .with_children(|builder| {
             builder.spawn_bundle(By::default()).id();
             builder.spawn_bundle(By::default()).id();
@@ -371,19 +320,19 @@ mod tests {
         world.query::<&Children>().for_each(&world, |children| assert_eq!(children.len(), 2));
     }
 
-    fn spawn_hierachy_4(mut flat_commands: FlatCommands) {
-        flat_commands
+    fn spawn_hierachy_4(mut commands: Commands) {
+        commands
         .spawn_root(Bx::default())
-        .spawn_child(Bx::default())
+        .with_child(Bx::default())
         .with_descendants(|local_root| {
             local_root
-            .spawn_child(By::default())
+            .with_child(By::default())
             .with_sibling(By::default());
         })
         .with_sibling(Bx::default())
         .with_descendants(|local_root| {
             local_root
-            .spawn_child(By::default())
+            .with_child(By::default())
             .with_sibling(By::default());
         });
     }
@@ -394,17 +343,17 @@ mod tests {
         SystemStage::single_threaded().add_system(spawn_hierachy_4).run(&mut world);
     }
 
-    fn spawn_heirachy_5(mut flat_commands: FlatCommands) {
-        let mut root = flat_commands.spawn_root(Bx::default());
+    fn spawn_heirachy_5(mut commands: Commands) {
+        let mut root = commands.spawn_root(Bx::default());
         
         root
-        .spawn_child(Bx::default())
-        .spawn_child(Bx::default())
+        .with_child(Bx::default())
+        .with_child(Bx::default())
         .with_sibling(Bx::default());
 
         root
-        .spawn_child(By::default())
-        .spawn_child(By::default())
+        .with_child(By::default())
+        .with_child(By::default())
         .with_sibling(By::default());
     }
 
@@ -419,11 +368,11 @@ mod tests {
         assert_eq!(world.query::<(&Y, &Children)>().iter(&world).len(), 1);
     }
 
-    fn spawn_heirachy_6(mut flat_commands: FlatCommands) {
-        let mut root = flat_commands.spawn_root(Bx::default());
+    fn spawn_heirachy_6(mut commands: Commands) {
+        let mut root = commands.spawn_root(Bx::default());
         let root_id = root.id();
         root
-        .spawn_child(By::default())
+        .with_child(By::default())
         .with_sibling(By::default())
         .commands().insert_resource(Root(root_id));
     }
@@ -443,11 +392,11 @@ mod tests {
         }
     }
 
-    fn spawn_hierachy_7(mut flat_commands: FlatCommands) {
-        let root_id = flat_commands.spawn_root(Bx::default())
-            .spawn_child_batch((0..10).map(|_| By::default()))
+    fn spawn_hierachy_7(mut commands: Commands) {
+        let root_id = commands.spawn_root(Bx::default())
+            .with_child_batch((0..10).map(|_| By::default()))
             .root_id();
-        flat_commands.commands().insert_resource(Root(root_id));
+        commands.insert_resource(Root(root_id));
     }
 
     #[test]
@@ -461,10 +410,10 @@ mod tests {
         assert_eq!(world.query::<&Y>().iter(&world).len(), 10);
     }
 
-    fn spawn_hierachy_8(mut flat_commands: FlatCommands) {
-        flat_commands.spawn_root(Bx::default())
-            .spawn_child(By::default())            
-            .spawn_child_batch((0..10).map(|_| By::default()));
+    fn spawn_hierachy_8(mut commands: Commands) {
+        commands.spawn_root(Bx::default())
+            .with_child(By::default())            
+            .with_child_batch((0..10).map(|_| By::default()));
     }
 
     #[test]
@@ -474,22 +423,22 @@ mod tests {
         assert_eq!(world.entities().len(), 12);
     }
 
-    fn spawn_hierachy_9(mut flat_commands: FlatCommands) {
-        flat_commands.spawn_root(Bx::default())
-        .spawn_child(By::default())
-        .spawn_child_batch((0..10).map(|_| By::default()))
+    fn spawn_hierachy_9(mut commands: Commands) {
+        commands.spawn_root(Bx::default())
+        .with_child(By::default())
+        .with_child_batch((0..10).map(|_| By::default()))
         .insert(X::default())   
-        .spawn_child_batch((0..10).map(|_| By::default()))
+        .with_child_batch((0..10).map(|_| By::default()))
         .with_sibling(By::default())
-        .spawn_child_batch((0..10).map(|_| By::default()))
+        .with_child_batch((0..10).map(|_| By::default()))
         .with_sibling(By::default())
         .insert(Y::default())  
-        .spawn_child(Bx::default())
-        .spawn_child_batch((0..10).map(|_| By::default()))
+        .with_child(Bx::default())
+        .with_child_batch((0..10).map(|_| By::default()))
         .with_descendants(|local_root| {
-            local_root.spawn_child_batch((0..10).map(|_| By::default()));
+            local_root.with_child_batch((0..10).map(|_| By::default()));
         })
-        .spawn_child_batch((0..10).map(|_| By::default()));
+        .with_child_batch((0..10).map(|_| By::default()));
     }
 
     
