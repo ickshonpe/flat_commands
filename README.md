@@ -266,8 +266,7 @@ fn spawn_hierachy(
 }
 ```
 #
-###
-spawn children in a batch
+### batched child spawning
 ```rust
 use flat_commands::*;
 
