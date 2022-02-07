@@ -2,6 +2,12 @@
 name = "flat_commands"
 version = "0.2.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+keywords = ["bevy", "ecs", "ergonomics", "games", "ui"]
+categories = ["game-development"]
+repository = "https://github.com/ickshonpe/flat_commands"
+readme = "README.md"
+description = "commands extension traits for bevy"
 
 [dependencies]
 bevy = { version = "0.6.0", default-features = false }
