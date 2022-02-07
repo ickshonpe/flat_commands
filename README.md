@@ -1,6 +1,6 @@
 # Flat Commands
 
-Extension traits for bevy for spawning entity hierarchies without nesting or storing ids.
+Extension traits for Bevy for creating entity hierarchies without nesting or storing ids.
 
 - Unoptimized, might have performance issues.
 
