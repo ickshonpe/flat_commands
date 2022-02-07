@@ -2,6 +2,10 @@
 
 Extension trait on Bevy Commands for spawning entity hierarchies without nesting.
 
+- Unoptimized, might have performance issues.
+
+- Intended uses are UI and prototyping.
+
 ## Examples
 
 ### Before
@@ -266,7 +270,23 @@ fn spawn_hierachy(
 }
 ```
 #
-### batched child spawning
+### EntityCommands also implements ParentCommands
+```rust
+use flat_commands::*;
+
+fn spawn_hierachy(
+    mut commands: Commands
+) {
+    let entity_commands = commands.spawn();
+    entity_commands
+    .insert(MyComponent)
+    .with_empty_child()
+    .with_empty_sibling();
+}
+
+```
+#
+### Batched child spawning
 ```rust
 use flat_commands::*;
 
@@ -276,7 +296,7 @@ fn spawn_brood(
 ) {
     let font = asset_server.load("fonts/FiraSans-Bold.ttf");
     commands.spawn_root(NodeBundle { ..Default::default() })
-    .with_child_batch((0..30).map(|i| {
+    .with_child_batch((0..30).map(move |i| {
         TextBundle {
             style: Style {
                 flex_shrink: 0.,
@@ -304,9 +324,9 @@ fn spawn_brood(
 ```
 #
 ## Other Info
-* Undocumented.
-* Untested, probably has bugs.
-* Unprofiled, probably slow.
-* Also has add_child and push_children.
-* No despawning or component removal (use regular commands).
-* No unsafe or macros.
+* Probably slow.
+* Doesn't do any despawning or component removal (use regular commands).
+* Doesn't use any unsafe code or macros.
+* Supports Bevy 0.6
+* Todo: Automatic marker components
+

@@ -1,15 +1,17 @@
 use bevy::prelude::*;
 use crate::*;
 
-pub trait WithId<'w, 's, 'a> : ParentCommander<'w, 's, 'a> {
+pub trait WithId<'w, 's, 'a> : ParentCommands<'w, 's, 'a> {
+    /// Allows access to the current entity id in a closure.
     fn with_id(&mut self, mut f: impl FnMut(Entity)) -> &mut Self {
         f(self.id());
         self
     }
 }
 
-impl <'w, 's, 'a> WithId<'w, 's, 'a>  for RootCommands<'w, 's, 'a>  {}
-impl <'w, 's, 'a> WithId<'w, 's, 'a>  for ChildCommands<'w, 's, 'a>  {}
+impl <'w, 's, 'a> WithId<'w, 's, 'a> for RootCommands<'w, 's, 'a> {}
+impl <'w, 's, 'a> WithId<'w, 's, 'a> for ChildCommands<'w, 's, 'a> {}
+impl <'w, 's, 'a> WithId<'w, 's, 'a> for EntityCommands<'w, 's, 'a> {}
 
 #[cfg(test)]
 mod tests {

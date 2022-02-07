@@ -4,11 +4,15 @@ use bevy::ecs::system::*;
 use bevy::prelude::*;
 
 pub trait FlatCommands<'w, 's> {
+    /// Set an existing entity as the root entity of the hierarchy
     fn root<'a>(&'a mut self, entity: Entity) -> RootCommands<'w, 's, 'a>;
 
+    /// Create a new entity with components from bundle and 
+    /// make it the root of the hierarchy
     fn spawn_root<B>(&mut self, bundle: B) -> RootCommands<'w, 's, '_> 
     where B: Bundle;
 
+    /// Spawn an empty entity make it the root of the hierarchy
     fn spawn_empty_root(&mut self) -> RootCommands<'w, 's, '_>;
 }
 
@@ -40,10 +44,12 @@ impl <'w, 's> FlatCommands<'w, 's> for Commands<'w, 's> {
     }
 }
 
+
 pub struct RootCommands<'w, 's, 'a> {
     entity: Entity,
     commands: &'a mut Commands<'w, 's>,
 }
+
 
 pub struct ChildCommands<'w, 's, 'a> {
     root: Entity,
@@ -52,13 +58,17 @@ pub struct ChildCommands<'w, 's, 'a> {
     commands: &'a mut Commands<'w, 's>,
 }
 
-pub trait ParentCommander<'w, 's, 'a> {
+pub trait ParentCommands<'w, 's, 'a> {
+    /// returns the id of the root entity of the current hierarchy
     fn root_id(&self) -> Entity;
 
+    /// returns the id of the current entity
     fn id(&self) -> Entity;
 
+    /// returns Commands
     fn commands(&mut self) -> &mut Commands<'w, 's>;
 
+    /// add a component to the current entity
     fn insert(&mut self, component: impl Component) -> &mut Self {
         let entity = self.id();
         self.commands().add(Insert {
@@ -68,6 +78,7 @@ pub trait ParentCommander<'w, 's, 'a> {
         self
     }
 
+    /// add a bundle of components to the current entity
     fn insert_bundle(&mut self, bundle: impl Bundle) -> &mut Self {
         let entity = self.id();
         self.commands().add(InsertBundle {
@@ -77,6 +88,9 @@ pub trait ParentCommander<'w, 's, 'a> {
         self
     }
 
+    /// Create a child entity with components from bundle
+    /// with the current entity as its parent.
+    /// Then make it the current entity
     fn with_child<T>(&mut self, bundle: T) -> ChildCommands<'w, 's, '_> 
     where
         T: Bundle
@@ -91,6 +105,7 @@ pub trait ParentCommander<'w, 's, 'a> {
         }
     }
 
+    /// create a child entity and make it the current entity
     fn with_empty_child<T>(&mut self) -> ChildCommands<'w, 's, '_> {
         let child = self.commands().spawn().id();
         self.add_child(child);
@@ -102,23 +117,20 @@ pub trait ParentCommander<'w, 's, 'a> {
         }
     }
 
+    /// makes the current entity the root of a new local hierachy
     fn with_descendants(&mut self, local_root: impl FnOnce(&mut RootCommands)) -> &mut Self {
         local_root(&mut RootCommands { entity: self.id(), commands: self.commands() });
         self
     }
 
-    fn push_children(&mut self, children: &[Entity]) -> &mut Self {
-        let entity = self.id();
-        self.commands().entity(entity).push_children(children);
-        self
-    }
-
+    /// create a child entity but don't advance to it.
     fn add_child(&mut self, child: Entity) -> &mut Self {
         let entity = self.id();
         self.commands().add(AddChild { child, parent: entity });
         self
     }
 
+    /// create multiple children each spawned with the same bundle of components.
     fn with_child_batch<I>(&mut self, bundles_iter: I) -> &mut Self
     where
         I: IntoIterator + Send + Sync + 'static,
@@ -130,7 +142,30 @@ pub trait ParentCommander<'w, 's, 'a> {
     }
 }
 
-impl <'w, 's, 'a> ParentCommander<'w, 's, 'a> for RootCommands<'w, 's, 'a> {
+pub trait ChildPusher<'w, 's, 'a> : ParentCommands<'w, 's, 'a> {
+    /// Add multiple children to the current entity by id.
+    fn push_children(&mut self, children: &[Entity]) -> &mut Self {
+        let entity = self.id();
+        self.commands().entity(entity).push_children(children);
+        self
+    }
+}
+
+impl <'w, 's, 'a> ParentCommands<'w, 's, 'a> for EntityCommands<'w, 's, 'a> {
+    fn root_id(&self) -> Entity {
+        self.id()
+    }
+
+    fn id(&self) -> Entity {
+        self.id()
+    }
+
+    fn commands(&mut self) -> &mut Commands<'w, 's> {
+        self.commands()
+    }
+}
+
+impl <'w, 's, 'a> ParentCommands<'w, 's, 'a> for RootCommands<'w, 's, 'a> {
     fn root_id(&self) -> Entity {
         self.entity
     }
@@ -144,7 +179,10 @@ impl <'w, 's, 'a> ParentCommander<'w, 's, 'a> for RootCommands<'w, 's, 'a> {
     }
 }
 
-impl <'w, 's, 'a> ParentCommander<'w, 's, 'a> for ChildCommands<'w, 's, 'a> {
+impl <'w, 's, 'a> ChildPusher<'w, 's, 'a> for RootCommands<'w, 's, 'a> { }
+impl <'w, 's, 'a> ChildPusher<'w, 's, 'a> for ChildCommands<'w, 's, 'a> { }
+
+impl <'w, 's, 'a> ParentCommands<'w, 's, 'a> for ChildCommands<'w, 's, 'a> {
     fn root_id(&self) -> Entity {
         self.root
     }
@@ -159,6 +197,8 @@ impl <'w, 's, 'a> ParentCommander<'w, 's, 'a> for ChildCommands<'w, 's, 'a> {
 }
 
 impl<'w, 's, 'a> ChildCommands<'w, 's, 'a> {    
+    /// Create a new entity with bundle components and the same parent as the current entity.
+    /// Then move to the new entity.
     pub fn with_sibling<T>(&mut self, bundle: T) -> &mut Self 
     where 
         T: Bundle,
@@ -170,6 +210,7 @@ impl<'w, 's, 'a> ChildCommands<'w, 's, 'a> {
         self
     }
 
+    /// Create a new empty entity and move to it.
     pub fn with_empty_sibling<T>(&mut self) -> &mut Self {
         let parent = self.parent;
         let child = self.commands.spawn().id();
@@ -178,6 +219,7 @@ impl<'w, 's, 'a> ChildCommands<'w, 's, 'a> {
         self
     }
 
+    /// return the id of the current entities parent.
     pub fn parent_id(&self) -> Entity {
         self.parent
     }
@@ -198,8 +240,7 @@ where
     I::Item: Bundle,
 {
     fn write(self, world: &mut World) {
-        let es = world.spawn_batch(self.bundles_iter).collect::<Vec<Entity>>();     
-            // not sure how to get around this allocation.
+        let es = world.spawn_batch(self.bundles_iter).collect::<Vec<Entity>>();          // not sure how to avoid this allocation.
         world.entity_mut(self.parent).push_children(&es);
     }
 }
