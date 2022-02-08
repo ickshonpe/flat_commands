@@ -1,10 +1,6 @@
 # Flat Commands
 
-Extension traits for Bevy for creating entity hierarchies without nesting or storing ids.
-
-- Unoptimized, might have performance issues.
-
-- Intended uses are UI and prototyping.
+Spawn entity hierarchies without nesting or storing the ids.
 
 ## Examples
 
@@ -53,7 +49,7 @@ fn setup(mut commands: Commands) {
         .push_child(child_1);
 }
 ```
-### after
+### with flat commands
 ```rust
 use flat_commands::*;
 
@@ -117,7 +113,7 @@ pub fn spawn_text_box(
     });
 }
 ```
-### after
+### with flat commands
 ```rust
 use flat_commands::*;
 
@@ -212,7 +208,7 @@ fn spawn_branching_hierachy(
     id
 }
 ```
-### after
+### with flat commands
 ```rust
 use flat_commands::*;
 
@@ -270,7 +266,7 @@ fn spawn_hierachy(
 }
 ```
 #
-### EntityCommands also implements ParentCommands
+### EntityCommands also implements the extension traits
 ```rust
 use flat_commands::*;
 
@@ -298,16 +294,6 @@ fn spawn_brood(
     commands.spawn_root(NodeBundle { ..Default::default() })
     .with_child_batch((0..30).map(move |i| {
         TextBundle {
-            style: Style {
-                flex_shrink: 0.,
-                size: Size::new(Val::Undefined, Val::Px(20.)),
-                margin: Rect {
-                    left: Val::Auto,
-                    right: Val::Auto,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
             text: Text::with_section(
                 format!("Item {}", i),
                 TextStyle {
@@ -324,9 +310,9 @@ fn spawn_brood(
 ```
 #
 ## Other Info
-* Probably slow.
+* Unoptimized, will be slower than with_children and push_children.
 * Doesn't do any despawning or component removal (use regular commands).
 * Doesn't use any unsafe code or macros.
 * Supports Bevy 0.6
-* Todo: Automatic marker components
+* Todo: Automatic marker component insertion.
 
