@@ -1,6 +1,6 @@
 # Flat Commands
 
-Spawn entity hierarchies without nesting or storing the ids.
+Spawn entity hierarchies without nesting or collecting the ids.
 
 ## Examples
 
@@ -45,11 +45,10 @@ fn setup(mut commands: Commands) {
             transform: Transform::from_xyz(1.0, 1.0, 1.0),
             ..Default::default()
         })
-        .push_child(child_1)
-        .push_child(child_1);
+        .push_children(&[child_1, child_2]);
 }
 ```
-### with flat commands
+### after
 ```rust
 use flat_commands::*;
 
@@ -113,7 +112,7 @@ pub fn spawn_text_box(
     });
 }
 ```
-### with flat commands
+### after
 ```rust
 use flat_commands::*;
 
@@ -208,7 +207,7 @@ fn spawn_branching_hierachy(
     id
 }
 ```
-### with flat commands
+### after
 ```rust
 use flat_commands::*;
 
