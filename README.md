@@ -312,6 +312,6 @@ fn spawn_brood(
 * Unoptimized, will be slower than with_children and push_children.
 * Doesn't do any despawning or component removal (use regular commands).
 * Doesn't use any unsafe code or macros.
-* Supports Bevy 0.6
+* version 2.2 Supports Bevy 0.7
 * Todo: Automatic marker component insertion.
 
