@@ -10,4 +10,4 @@ readme = "README.md"
 description = "bevy ecs extension traits"
 
 [dependencies]
-bevy = { version = "0.7.0", default-features = false }
+bevy = { version = "0.8.0", default-features = false }
