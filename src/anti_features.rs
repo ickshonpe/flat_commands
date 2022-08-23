@@ -61,7 +61,7 @@ mod tests {
             assert_eq!(world.entity(parent).get::<Children>().unwrap()[0], child);
         }
         for (&child, &parent) in ids[1..].iter().zip(&ids[..4]) {
-            assert_eq!(world.entity(child).get::<Parent>().unwrap().0, parent);
+            assert_eq!(world.entity(child).get::<Parent>().unwrap().get(), parent);
         }
     }
 }

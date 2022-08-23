@@ -311,7 +311,7 @@ mod tests {
         let children = world.entity(root_id).get::<Children>().unwrap();
         assert_eq!(children[0], child_id);
         let parent = world.entity(child_id).get::<Parent>().unwrap();
-        assert_eq!(parent.0, root_id);
+        assert_eq!(parent.get(), root_id);
     }
 
     fn spawn_hierachy_2(mut commands: Commands) {
@@ -443,7 +443,7 @@ mod tests {
         let children = world.entity(root_id).get::<Children>().unwrap();
         assert_eq!(children.len(), 2);
         for child in children.iter() {
-            let parent = world.entity(*child).get::<Parent>().unwrap().0;
+            let parent = world.entity(*child).get::<Parent>().unwrap().get();
             assert_eq!(root_id, parent);
         }
     }
